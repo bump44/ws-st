@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+
+    <style>
+      .container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .container > div {
+        max-width: 300px;
+        overflow-x: scroll;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div id="state" class="state">
+        <div id="state_login">Unknown token</div>
+        <div id="state_ws">Connecting...</div>
+      </div>
+      <div class="actions">
+        <button id="register_button">Register</button>
+        <button id="login_button">Login</button>
+      </div>
+      <div class="ws_actions">
+        <button id="ws_send_login_button">Send auth event</button>
+        <button id="ws_send_message_button">Send message event</button>
+        <button id="ws_send_history_button">Send history event</button>
+      </div>
+      <div class="ws_response">
+        Ws Response:
+        <pre id="ws_response"></pre>
+      </div>
+    </div>
+
+    <script>
+      let token = '';
+
+      const userData = { username: 'bump44', password: 'test' };
+      const wsState = document.getElementById('state_ws');
+      const loginState = document.getElementById('state_login');
+      const loginButton = document.getElementById('login_button');
+      const registerButton = document.getElementById('register_button');
+
+      const wsResponse = document.getElementById('ws_response');
+      const wsSendLoginButton = document.getElementById('ws_send_login_button');
+      const wsSendMessageButton = document.getElementById(
+        'ws_send_message_button',
+      );
+      const wsSendHistoryButton = document.getElementById(
+        'ws_send_history_button',
+      );
+
+      loginButton.addEventListener('click', () => {
+        loginButton.innerText = 'Loading...';
+        loginButton.disabled = true;
+
+        fetch('http://localhost:3000/auth/login', {
+          method: 'POST',
+          body: JSON.stringify(userData),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+          .then((res) => {
+            if (res.status >= 400) throw new Error(res.statusText);
+            return res.json();
+          })
+          .then((data) => {
+            token = data.token;
+            loginState.innerHTML = `Token: <pre>${data.token}</pre>`;
+          })
+          .catch((err) => {
+            loginState.innerText = err.message;
+          })
+          .finally(() => {
+            loginButton.disabled = false;
+            loginButton.innerText = 'Login';
+          });
+      });
+
+      registerButton.addEventListener('click', () => {
+        registerButton.innerText = 'Loading...';
+        registerButton.disabled = true;
+
+        fetch('http://localhost:3000/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(userData),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+          .then((res) => {
+            if (res.status >= 400) throw new Error(res.statusText);
+            return res.json();
+          })
+          .then((data) => {
+            token = data.token;
+            loginState.innerHTML = `Token: <pre>${data.token}</pre>`;
+          })
+          .catch((err) => {
+            loginState.innerText = err.message;
+          })
+          .finally(() => {
+            registerButton.disabled = false;
+            registerButton.innerText = 'Register';
+          });
+      });
+
+      const socket = new WebSocket('ws://localhost:3001/');
+
+      socket.onopen = () => {
+        wsState.innerText = 'Connected';
+      };
+
+      socket.onclose = () => {
+        wsState.innerText = 'Closed';
+      };
+
+      socket.onmessage = (evt) => {
+        wsResponse.innerHTML = [evt.data, wsResponse.innerHTML].join('<br/>');
+      };
+
+      wsSendLoginButton.addEventListener('click', () => {
+        if (!token) return alert('Need login before');
+
+        socket.send(
+          JSON.stringify({
+            type: 'auth',
+            payload: token,
+          }),
+        );
+      });
+
+      wsSendMessageButton.addEventListener('click', () => {
+        if (!token) return alert('Need login before');
+
+        socket.send(
+          JSON.stringify({
+            type: 'push_message',
+            payload: Math.random().toString(36),
+          }),
+        );
+      });
+
+      wsSendHistoryButton.addEventListener('click', () => {
+        if (!token) return alert('Need login before');
+
+        socket.send(
+          JSON.stringify({
+            type: 'history',
+            payload: 10,
+          }),
+        );
+      });
+    </script>
+  </body>
+</html>
