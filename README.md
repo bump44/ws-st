@@ -1,4 +1,4 @@
-`
+```
 fetch('/auth/login', {
   method: 'POST',
   body: JSON.stringify({ username: 'bump44', password: 'test' }),
@@ -6,7 +6,9 @@ fetch('/auth/login', {
     'Content-Type': 'application/json',
   },
 });
+```
 
+```
 fetch('/auth/register', {
   method: 'POST',
   body: JSON.stringify({ username: 'bump44', password: 'test' }),
@@ -14,4 +16,4 @@ fetch('/auth/register', {
     'Content-Type': 'application/json',
   },
 });
-`
+```
